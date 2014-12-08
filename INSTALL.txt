@@ -1,0 +1,118 @@
+Notice: This document frequently use blinkdb to for the name of commands. This
+is because the initial goal was to reproduce BlinkDB on Impala, but the
+functions are far from complete. To understand to Full capabilities of
+Blinkdb, please refer to BlinkDB website (http://www.blinkdb.org)
+
+This is the install instruction for Impala approimate query extension.
+
+The steps  are:
+	1. Setup virtual machines
+	2. Install Impala cluster on virtual machines
+	3. Install Impala approximate query extension
+
+These steps assume that the user doesn't have anything setup yet. If you
+already have an Impala cluster running, you can 
+
+Requirements
+	Ubuntu Server 14.04 LTS (Host to run Impala server on)
+	CDH5.2.1 (Impala version)
+
+	Result on other system or Impala version has not been tested yet.
+
+1. Setup virtual machines
+	Install Virtual box. Set up a host with memory greater than 4GB. Install
+	Ubuntu Server 14.04 LTS on ther virtual machine. Set network type to
+	bridged adapter.
+
+1.1 Configure host
+	When installing Impala, it is important the Impala doesn't see itself as
+	localhost. The general solution is to have a DNS service. The easy solutioin is to modify the /etc/hosts. Run ifconfig to get
+	the ip of the machine.
+	
+	Add line to the end of /etc/hosts/
+		<ip> <myhost-1.mynet.myco.com>
+
+1.2 Sudo with no password
+	This is required for cloudera manager to install impala on your host.
+	
+	$ sudo visudo
+	and add line to the end:
+		<username> ALL=(NOPASSWD: ALL)
+
+2. Install Impala cluster
+	Download and install Cloudera Manager at
+		http://www.cloudera.com/content/cloudera/en/downloads/cloudera_manager/cm-5-2-1.html
+	on the virtual host.
+
+	Go to website <hostip>:7180 to install impala. 
+		Select Core with impala in the cluster type.
+		You should also provide the host, username that can sudo
+		without password and the username's password.
+	
+	After this, you would have an working impala on the host your setup. You
+	now can log into host, type "impala-shell", and create tables and run
+	querys their with impala's standard features.
+	
+	To add additional Impala nodes to the cluster, you can use the same
+	website <hostip>:7180. Remember to correctly setup /etc/hosts so that each
+	machine can relate hostname to ip correctly.
+
+3. Install Impala approximate query extension
+
+	3.1 Get code
+	3.2 Build and upload user defined functions
+	3.3 Install shell
+	3.4 Install user defined functions
+
+3.1 Get code
+
+	$ git clone https://github.com/bobo1993324/impala_approximate_extension.git
+
+3.2 Build and upload user defined functions
+	
+	First go to udf directory and make sure dependant library is installed:
+		$ cd impala_approximate_extension/udf
+		$ sudo apt-get install cmake g++ libboost1.55-dev
+
+	Download and install Impala UDF development package:
+		$ wget
+			http://archive.cloudera.com/cdh5/ubuntu/precise/amd64/cdh/pool/contrib/i/impala/impala-udf-dev_2.0.1+cdh5.2.1+0-1.cdh5.2.1.p0.14~precise-cdh5.2.1_amd64.deb
+		$ sudo dpkg -i impala-udf-dev<tab>
+
+	Compile:
+		& cmake . && make
+	
+	Upload:
+		Impala's user defined functions are loaded in HDFS. So we need to
+		upload the build file to HDFS
+
+		$ sudo su impala
+		$ hdfs dfs -mkdir /user/impala/udf
+		$ hdfs dfs -put build/libblinkdbudf.so /user/impala/udf
+
+3.3 Install shell
+	$ cd impala_approximate_extension
+	$ sudo ./install.sh
+
+	You can uninstall impala approximate extension with
+	$ sudo ./uninstall.sh
+
+	After installation, you should be able to enter approximate extension shell with
+	$ ./blinkdb-shell
+	The usage of calling blinkdb-shell is exactly the same as calling
+	impala-shell 
+
+3.4 Install user defined function
+	Enter extension shell:
+	$ blinkdb-shell
+	
+	Then in SQL shell, type:
+	$ blinkdbinstall /user/impala/udf
+	This will install all user defined function used by the extension. The
+	user defined functions are bounded with database. If you switch to another
+	database that has not been installed user defined functions, you would
+	need to run the above command again.
+
+Now that you have Impala approximate query extension installed. Continue to read README.txt to
+learn how to do approximate queries.
+	

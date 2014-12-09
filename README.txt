@@ -87,3 +87,12 @@ If you just want to find the code, Jump to section "How it works".
 		$ CREATE TABLE sampleTableX AS SELECT * FROM tableX WHERE randomSampleWith(0.01);
 	to 
 		$ CREATE TABLE sampleTableX AS SELECT *, 1 / 0.01 as sampleWeight FROM tableX WHERE randomSampleWith(0.01);
+
+2.3.2 Rewrite query sample table
+
+    approx_sum and approx_count requires sampleWeight as its second parameter. So sampleWeight is added.
+
+    So we change query:
+        $ SELECT approx_avg(quantity) FROM sampleTableX
+    to
+        $ SELECT approx_count(quantity) FROM sampleTableX
